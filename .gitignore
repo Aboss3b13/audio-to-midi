@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+runs/
+assets/soundfonts/*.sf2
+assets/soundfonts/*.sf3
