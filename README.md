@@ -4,7 +4,7 @@ A professional-grade Streamlit web application that intelligently converts audio
 
 ## Overview
 
-Music Sheet Builder is an end-to-end audio-to-notation system that combines cutting-edge pitch detection, intelligent layer separation, and interactive music editing—all in a beautiful, modern web interface.
+Music Sheet Builder is an end-to-end audio-to-notation system that combines cutting-edge pitch detection, intelligent layer separation, and interactive music editing—all in a beautiful, modern web interface. 
 
 ### What It Does
 
