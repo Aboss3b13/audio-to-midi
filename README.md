@@ -1,6 +1,6 @@
 # Music Sheet Builder 🎵
 
-A professional-grade Streamlit web application that intelligently converts audio recordings into sheet music, MIDI files, and isolated instrument layers. Whether you're transcribing a piano recording, separating vocals from instruments, or documenting musical ideas, Music Sheet Builder provides powerful transcription and arrangement tools.
+A professional-grade Streamlit web application that intelligently converts audio recordings into sheet music, MIDI files, and isolated instrument layers. Whether you're transcribing a piano recording, separating vocals from instruments, or documenting musical ideas, Music Sheet Builder provides powerful transcription and arrangement tools.b
 
 ## Overview
 
