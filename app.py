@@ -252,22 +252,22 @@ with st.sidebar:
         st.caption("TRANSCRIPTION")
         detection_method = st.selectbox("Layer engine", ["Stem-guided replica", "Note clustering", "Single score"])
         export_layers = st.toggle("Create individual layer files", value=True)
-        target_layer_count = st.slider("Target layers", 1, 8, 4)
+        target_layer_count = st.slider("Target layers", 1, 8, 3)
         min_layer_note_ratio = st.slider("Minimum layer share", 0.02, 0.25, 0.06, 0.01)
         with st.expander("Model sensitivity"):
-            onset_threshold = st.slider("Onset threshold", 0.35, 0.85, 0.58, 0.01)
-            frame_threshold = st.slider("Frame threshold", 0.08, 0.50, 0.23, 0.01)
-            minimum_note_length_ms = st.slider("Model min. note (ms)", 60, 520, 180, 5)
-            min_output_note_length_ms = st.slider("Final min. note (ms)", 40, 380, 115, 5)
-            merge_gap_ms = st.slider("Merge gap (ms)", 20, 350, 130, 5)
-            legato_extension_ms = st.slider("Legato extension (ms)", 0, 260, 70, 5)
-            flicker_merge_gap_ms = st.slider("Pitch flicker gap (ms)", 10, 120, 45, 5)
+            onset_threshold = st.slider("Onset threshold", 0.35, 0.85, 0.50, 0.01)
+            frame_threshold = st.slider("Frame threshold", 0.08, 0.50, 0.30, 0.01)
+            minimum_note_length_ms = st.slider("Model min. note (ms)", 60, 520, 125, 5)
+            min_output_note_length_ms = st.slider("Final min. note (ms)", 40, 380, 80, 5)
+            merge_gap_ms = st.slider("Merge gap (ms)", 20, 350, 85, 5)
+            legato_extension_ms = st.slider("Legato extension (ms)", 0, 260, 45, 5)
+            flicker_merge_gap_ms = st.slider("Pitch flicker gap (ms)", 10, 120, 35, 5)
             sustain_boost = st.slider("Sustain fusion", 0.02, 0.20, 0.08, 0.01)
     else:
-        detection_method, export_layers, target_layer_count, min_layer_note_ratio = "Stem-guided replica", True, 4, 0.06
-        onset_threshold, frame_threshold = 0.58, 0.23
-        minimum_note_length_ms, min_output_note_length_ms = 180, 115
-        merge_gap_ms, legato_extension_ms, flicker_merge_gap_ms, sustain_boost = 130, 70, 45, 0.08
+        detection_method, export_layers, target_layer_count, min_layer_note_ratio = "Note clustering", True, 3, 0.04
+        onset_threshold, frame_threshold = 0.50, 0.30
+        minimum_note_length_ms, min_output_note_length_ms = 125, 80
+        merge_gap_ms, legato_extension_ms, flicker_merge_gap_ms, sustain_boost = 85, 45, 35, 0.08
     st.divider()
     st.caption("SESSION")
     if st.button("Start a new project", use_container_width=True):
@@ -334,7 +334,8 @@ if transcribe and source_bytes is not None:
             analysis = analyze_audio(
                 audio_path=source_path, output_root=run_dir, detect_layers=detect_layers,
                 transcribe_detected_layers=bool(export_layers), replica_mode=replica_mode,
-                min_layer_energy_ratio=float(min_layer_note_ratio), target_layer_count=int(target_layer_count) if detect_layers else None,
+                min_layer_energy_ratio=float(min_layer_note_ratio),
+                target_layer_count=(None if mode == "Simple" else int(target_layer_count)) if detect_layers else None,
                 onset_threshold=float(onset_threshold), frame_threshold=float(frame_threshold),
                 minimum_note_length_ms=float(minimum_note_length_ms), min_output_note_length_ms=float(min_output_note_length_ms),
                 merge_gap_ms=float(merge_gap_ms), legato_extension_ms=float(legato_extension_ms),
@@ -343,6 +344,8 @@ if transcribe and source_bytes is not None:
             status.update(label="Your score is ready", state="complete", expanded=False)
         st.session_state.update(analysis=analysis, run_dir=run_dir, analysis_id=run_id, input_signature=_source_signature(source_name, source_bytes))
         st.session_state.pop("arrangement", None)
+        if analysis.full_note_count == 0:
+            st.warning("No stable notes were found. Try Advanced mode with a lower onset threshold, or use a clearer section of the recording.")
     except Exception as exc:
         st.error("Transcription could not be completed. Try a shorter or clearer audio file, or adjust sensitivity in Advanced mode.")
         with st.expander("Technical details"):

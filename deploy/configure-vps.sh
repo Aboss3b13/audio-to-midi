@@ -26,6 +26,21 @@ site_path.write_text(site.replace(needle, f"{snippet}\n\n{needle}"))
 PY
 fi
 
+if ! grep -q 'client_max_body_size 500m' "$NGINX_SITE"; then
+    sudo NGINX_SITE="$NGINX_SITE" python3 - <<'PY'
+import os
+from pathlib import Path
+
+site_path = Path(os.environ["NGINX_SITE"])
+site = site_path.read_text()
+needle = "location ^~ /Music/ {\n"
+if site.count(needle) != 2:
+    raise RuntimeError(f"Expected two Music proxy locations, found {site.count(needle)}")
+settings = "    client_max_body_size 500m;\n    client_body_timeout 600s;\n"
+site_path.write_text(site.replace(needle, needle + settings))
+PY
+fi
+
 sudo nginx -t
 sudo systemctl reload nginx
 
