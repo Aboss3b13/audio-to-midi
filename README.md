@@ -1,10 +1,10 @@
-# Music Sheet Builder 🎵
+# ScoreFlow — Audio to Sheet Music
 
-A professional-grade Streamlit web application that intelligently converts audio recordings into sheet music, MIDI files, and isolated instrument layers. Whether you're transcribing a piano recording, separating vocals from instruments, or documenting musical ideas, Music Sheet Builder provides powerful transcription and arrangement tools.b
+A polished Streamlit transcription studio that turns audio recordings into editable sheet music, MIDI, isolated musical layers, and downloadable project bundles. ScoreFlow provides a fast Simple workflow for everyday transcription and an Advanced workspace for detailed detection and arrangement control.
 
 ## Overview
 
-Music Sheet Builder is an end-to-end audio-to-notation system that combines cutting-edge pitch detection, intelligent layer separation, and interactive music editing—all in a beautiful, modern web interface. 
+ScoreFlow is an end-to-end audio-to-notation system that combines pitch detection, intelligent layer separation, and interactive music editing in a clean, modern workspace.
 
 ### What It Does
 
@@ -372,7 +372,7 @@ This approach significantly reduces note conflicts and improves separation quali
 ### Post-Processing Workflow
 
 For publication-quality transcriptions:
-1. Export MusicXML from Music Sheet Builder
+1. Export MusicXML from ScoreFlow
 2. Open in **MuseScore**, **Finale**, or **Dorico**
 3. Manually correct:
    - Wrong accidentals (often F♯ vs G♭)
