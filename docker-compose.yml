@@ -1,0 +1,13 @@
+services:
+  scoreflow:
+    build: .
+    container_name: scoreflow
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8502:8501"
+    volumes:
+      - ./runs:/app/runs
+      - ./assets/soundfonts:/app/assets/soundfonts
+    environment:
+      STREAMLIT_SERVER_ENABLE_CORS: "false"
+      STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION: "false"

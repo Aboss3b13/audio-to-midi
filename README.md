@@ -13,6 +13,8 @@ ScoreFlow is an end-to-end audio-to-notation system that combines pitch detectio
 3. **Sheet Music Generation**: Creates professional-grade MusicXML output that can be imported into notation software (Finale, Sibelius, MuseScore, etc.)
 4. **Interactive Arrangement**: Reassign instruments, adjust note timing, control sustain pedal, transpose, and customize each layer
 5. **High-Quality Playback**: Renders arranged compositions using quality SoundFont libraries with realistic instrument sounds
+6. **In-App MIDI Player**: Plays the generated MIDI directly in the browser with per-part instrument selection and the SGM Plus SoundFont
+7. **Responsive Workspaces**: Dedicated Desktop and Mobile layouts keep controls readable on every screen size
 
 ## Key Features
 

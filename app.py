@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import base64
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
@@ -11,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 import pretty_midi
 import streamlit as st
+import streamlit.components.v1 as components
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
@@ -45,8 +47,10 @@ st.markdown(
     :root{--paper:#f7f6f1;--surface:#fff;--ink:#17201d;--muted:#66706c;--line:#e5e7e2;--lime:#b7f34a;--green:#183e32;--orange:#ff6b35}
     .stApp{background:var(--paper)} .block-container{max-width:1240px;padding:1.5rem 2rem 4rem}
     html,body,[class*="css"],p,div,label,span,button,input{font-family:'DM Sans',sans-serif} h1,h2,h3{font-family:'Manrope',sans-serif!important;color:var(--ink)} h1{letter-spacing:-.05em}
-    [data-testid="stSidebar"]{background:#14271f;border-right:0}[data-testid="stSidebar"]>div{padding-top:1.1rem}[data-testid="stSidebar"] *{color:#eef4ef}[data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.12)}
-    [data-testid="stSidebar"] [data-baseweb="slider"] *{color:#b7f34a}[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"]{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)}
+    [data-testid="stSidebar"]{background:#14271f;border-right:0}[data-testid="stSidebar"]>div{padding-top:1.1rem}
+    [data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3,[data-testid="stSidebar"] label,[data-testid="stSidebar"] [data-testid="stCaptionContainer"],[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p{color:#eef4ef!important}
+    [data-testid="stSidebar"] input,[data-testid="stSidebar"] [data-baseweb="select"] *{color:#17201d!important}
+    [data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.12)}[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"]{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)}
     .brand{display:flex;align-items:center;gap:.72rem;margin-bottom:1.5rem}.brand-mark{width:2.2rem;height:2.2rem;display:grid;place-items:center;border-radius:10px;background:var(--lime);color:#14271f;font:800 1.1rem 'Manrope';transform:rotate(-4deg)}
     .brand-name{color:white;font:800 1.1rem 'Manrope';letter-spacing:-.03em}.brand-beta{color:#9caea7;font-size:.66rem;text-transform:uppercase;letter-spacing:.13em}
     .hero{position:relative;overflow:hidden;min-height:285px;border-radius:28px;padding:2.8rem 3rem;background:#183e32;box-shadow:0 18px 50px rgba(23,32,29,.12);margin-bottom:1.6rem}
@@ -59,6 +63,7 @@ st.markdown(
     .success-banner{display:flex;align-items:center;gap:.85rem;padding:1rem 1.15rem;margin:1.1rem 0;background:#e8f6de;border:1px solid #c9e9b4;border-radius:16px;color:#25401d}.success-icon{width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:#b7f34a;font-weight:900}
     .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin:.7rem 0 1.2rem}.metric-card{background:white;border:1px solid var(--line);border-radius:16px;padding:1rem 1.05rem}.metric-value{font:800 1.65rem 'Manrope';color:var(--ink);letter-spacing:-.04em}.metric-label{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;margin-top:.15rem}
     .layer-card{background:white;border:1px solid var(--line);border-radius:17px;padding:1rem 1.1rem;margin:.55rem 0}.layer-top{display:flex;align-items:center;justify-content:space-between;gap:1rem}.layer-name{font:700 .98rem 'Manrope';color:var(--ink)}.layer-meta{color:var(--muted);font-size:.77rem;margin-top:.2rem}.confidence{padding:.28rem .55rem;border-radius:99px;background:#eef3e9;color:#456128;font-size:.7rem;font-weight:700;white-space:nowrap}
+    .soundfont-note{display:flex;align-items:center;gap:.65rem;background:#edf4ef;border:1px solid #d5e4d9;border-radius:13px;padding:.75rem .9rem;color:#315043;font-size:.8rem;margin:.65rem 0 1rem}.soundfont-dot{width:.65rem;height:.65rem;border-radius:50%;background:#55a36b;box-shadow:0 0 0 4px rgba(85,163,107,.12)}
     .empty-state{text-align:center;padding:3.5rem 1rem;color:var(--muted)}.empty-icon{font-size:2.3rem;filter:grayscale(1);opacity:.65;margin-bottom:.6rem}.fine-print{color:#9caea7!important;font-size:.73rem;line-height:1.5}
     .stButton>button,.stDownloadButton>button{min-height:2.75rem;border-radius:12px;font-weight:700;transition:.16s ease}.stButton>button[kind="primary"]{background:var(--orange);border-color:var(--orange);color:white;box-shadow:0 7px 18px rgba(255,107,53,.2)}.stButton>button[kind="primary"]:hover{background:#ee5926;border-color:#ee5926;transform:translateY(-1px)}
     .stDownloadButton>button{background:white;border:1px solid #d9ddd8;color:var(--ink)}.stDownloadButton>button:hover{border-color:#79966d;color:#244537}.stTabs [data-baseweb="tab-list"]{gap:.2rem;border-bottom:1px solid var(--line)}.stTabs [data-baseweb="tab"]{font-weight:700;color:var(--muted);padding:.2rem .9rem .7rem}.stTabs [aria-selected="true"]{color:var(--green)!important}
@@ -68,6 +73,23 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+def _apply_view_mode(view_mode: str) -> None:
+    if view_mode != "Mobile":
+        return
+    st.markdown(
+        """
+        <style>
+        .block-container{max-width:620px!important;padding-left:.8rem!important;padding-right:.8rem!important}
+        .hero{padding:2rem 1.3rem;min-height:0}.hero:after{display:none}.hero h1{font-size:2.7rem}
+        .metric-grid{grid-template-columns:repeat(2,1fr)}.step-copy{display:none}
+        [data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;gap:.55rem!important}
+        [data-testid="column"]{min-width:100%!important;flex:1 1 100%!important}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _timestamp_id() -> str:
@@ -100,6 +122,53 @@ def _midi_stats(midi_path: Path) -> dict[str, str | int | float]:
     if pitches:
         pitch_range = f"{pretty_midi.note_number_to_name(min(pitches))}–{pretty_midi.note_number_to_name(max(pitches))}"
     return {"duration": float(midi.get_end_time()), "tempo": tempo, "range": pitch_range, "tracks": len(midi.instruments)}
+
+
+def _build_player_midi(
+    source_path: Path,
+    output_path: Path,
+    enabled: dict[int, bool],
+    instruments: dict[int, str],
+) -> Path:
+    """Create a browser-playable MIDI with the user's instrument choices."""
+    midi = pretty_midi.PrettyMIDI(str(source_path))
+    kept = []
+    for idx, track in enumerate(midi.instruments):
+        if not enabled.get(idx, True):
+            continue
+        preset_name = instruments.get(idx)
+        if preset_name in INSTRUMENT_PRESETS:
+            preset = INSTRUMENT_PRESETS[preset_name]
+            track.program = preset.gm_program
+            track.name = preset.name
+        kept.append(track)
+    midi.instruments = kept
+    midi.write(str(output_path))
+    return output_path
+
+
+def _midi_player(midi_bytes: bytes, player_id: str, mobile: bool = False) -> None:
+    """Embed an interactive MIDI transport backed by the SGM Plus SoundFont."""
+    encoded = base64.b64encode(midi_bytes).decode("ascii")
+    height = 360 if mobile else 430
+    components.html(
+        f"""
+        <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+        <style>
+          *{{box-sizing:border-box}} body{{margin:0;background:#fff;font-family:system-ui;color:#17201d}}
+          .shell{{border:1px solid #e5e7e2;border-radius:16px;padding:14px;background:linear-gradient(180deg,#fff,#fafbf8);overflow:hidden}}
+          midi-player{{display:block;width:100%;margin-bottom:12px;color:#183e32}}
+          midi-visualizer{{display:block;width:100%;height:{265 if mobile else 330}px;overflow:auto;border-top:1px solid #edf0eb;padding-top:8px}}
+          midi-visualizer .piano-roll-visualizer{{background:#fafbf8}}
+        </style></head><body><div class="shell">
+        <midi-player src="data:audio/midi;base64,{encoded}" sound-font visualizer="#viz-{player_id}"></midi-player>
+        <midi-visualizer type="piano-roll" id="viz-{player_id}" src="data:audio/midi;base64,{encoded}"></midi-visualizer>
+        </div></body></html>
+        """,
+        height=height,
+        scrolling=False,
+    )
 
 
 def _sanitize_musicxml(xml_text: str) -> str:
@@ -146,6 +215,9 @@ def _score_viewer(xml_path: Path, widget_id: str) -> tuple[list[str], int]:
 
 def _project_bundle(analysis, arrangement: dict | None) -> bytes:
     files: list[Path] = [analysis.source_audio_path, analysis.full_midi_path, analysis.full_musicxml_path]
+    player_preview = analysis.full_midi_path.parent / "player-preview.mid"
+    if player_preview.exists():
+        files.append(player_preview)
     for layer in analysis.layers:
         files.append(layer.audio_path)
         files.extend(path for path in [layer.midi_path, layer.musicxml_path] if path)
@@ -173,6 +245,8 @@ with st.sidebar:
     mode = st.radio("Workspace mode", ["Simple", "Advanced"], horizontal=True, label_visibility="collapsed")
     note = "Smart defaults handle layer detection, timing cleanup, and score generation." if mode == "Simple" else "Tune detection and edit each transcribed layer independently."
     st.markdown(f'<div class="mode-note">{note}</div>', unsafe_allow_html=True)
+    st.caption("LAYOUT")
+    view_mode = st.radio("Layout", ["Desktop", "Mobile"], horizontal=True, label_visibility="collapsed")
     st.divider()
     if mode == "Advanced":
         st.caption("TRANSCRIPTION")
@@ -200,6 +274,9 @@ with st.sidebar:
         _reset()
         st.rerun()
     st.markdown('<p class="fine-print">Files are processed locally and saved only in this project workspace.</p>', unsafe_allow_html=True)
+
+
+_apply_view_mode(view_mode)
 
 
 st.markdown(
@@ -287,9 +364,9 @@ st.markdown(f"""<div class="metric-grid">
 <div class="metric-card"><div class="metric-value">{_format_time(float(stats['duration']))}</div><div class="metric-label">Duration</div></div>
 <div class="metric-card"><div class="metric-value">{stats['range']}</div><div class="metric-label">Pitch range</div></div></div>""", unsafe_allow_html=True)
 
-tab_names = ["Overview", "Sheet music", "Layers", "Downloads"]
+tab_names = ["Overview", "Sheet music", "MIDI player", "Layers", "Downloads"]
 if mode == "Advanced":
-    tab_names[3:3] = ["Arrange", "Note data"]
+    tab_names[-1:-1] = ["Arrange", "Note data"]
 tabs = st.tabs(tab_names)
 tab_map = dict(zip(tab_names, tabs))
 
@@ -320,6 +397,34 @@ with tab_map["Sheet music"]:
     c1.download_button("Download editable MusicXML", _read_bytes(analysis.full_musicxml_path), "scoreflow-sheet.musicxml", "application/vnd.recordare.musicxml+xml", use_container_width=True)
     if score_pages:
         c2.download_button("Download current page as SVG", score_pages[selected_page - 1].encode("utf-8"), f"scoreflow-sheet-page-{selected_page}.svg", "image/svg+xml", use_container_width=True)
+
+with tab_map["MIDI player"]:
+    st.subheader("Play your transcription")
+    st.caption("Mute parts or change their instruments, then use the transport below to listen immediately.")
+    player_tracks = list_midi_tracks(analysis.full_midi_path)
+    player_enabled: dict[int, bool] = {}
+    player_presets: dict[int, str] = {}
+    program_names = {preset.gm_program: name for name, preset in INSTRUMENT_PRESETS.items()}
+    for track in player_tracks:
+        idx = int(track["track_index"])
+        default_name = program_names.get(int(track["program"]), "Acoustic Grand Piano")
+        c_use, c_name, c_instrument = st.columns([.65, 1.35, 2])
+        player_enabled[idx] = c_use.toggle("Play", value=True, key=f"player::{analysis_id}::{idx}::enabled")
+        c_name.markdown(f"**Part {idx + 1}**  \n{track['note_count']} notes")
+        player_presets[idx] = c_instrument.selectbox(
+            f"Part {idx + 1} instrument",
+            PRESET_NAMES,
+            index=PRESET_NAMES.index(default_name),
+            key=f"player::{analysis_id}::{idx}::preset",
+            label_visibility="collapsed",
+        )
+    if not any(player_enabled.values()):
+        st.warning("Enable at least one part to use the player.")
+    elif run_dir is not None:
+        player_path = _build_player_midi(analysis.full_midi_path, run_dir / "player-preview.mid", player_enabled, player_presets)
+        st.markdown('<div class="soundfont-note"><span class="soundfont-dot"></span><span><b>SGM Plus SoundFont active</b> · realistic General MIDI playback runs directly in your browser.</span></div>', unsafe_allow_html=True)
+        _midi_player(_read_bytes(player_path), f"{analysis_id}-{hash(repr(player_presets)) & 0xffff}", mobile=view_mode == "Mobile")
+        st.download_button("Download this instrument mix", _read_bytes(player_path), "scoreflow-player-mix.mid", "audio/midi", use_container_width=True)
 
 with tab_map["Layers"]:
     st.subheader("Detected musical layers")

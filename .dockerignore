@@ -1,0 +1,8 @@
+.git
+.venv
+.vscode
+__pycache__
+*.pyc
+runs
+assets/soundfonts/*.sf2
+assets/soundfonts/*.sf3
