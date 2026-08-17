@@ -402,6 +402,68 @@ def _estimate_layer_profile(mean_pitch: float, mean_duration: float, density: fl
     return "Estimated Harmony Instrument", 0, 0.58
 
 
+def _estimate_single_instrument_profile(audio_path: Path, midi_path: Path) -> tuple[str, int, float]:
+    """Estimate one broad instrument family without inventing extra layers.
+
+    This is deliberately conservative.  A transcription does not contain enough
+    timbral information to justify splitting a busy performance into instruments,
+    so the single-instrument workflow keeps one score part and only labels its
+    most likely family.
+    """
+    y, sr = librosa.load(str(audio_path), sr=22050, mono=True, duration=90.0)
+    if y.size == 0:
+        return "Instrument", 0, 0.35
+
+    y = _normalize_audio(y)
+    harmonic, percussive = librosa.effects.hpss(y)
+    total_rms = float(np.mean(librosa.feature.rms(y=y))) + 1e-8
+    harmonic_ratio = float(np.mean(librosa.feature.rms(y=harmonic))) / total_rms
+    percussive_ratio = float(np.mean(librosa.feature.rms(y=percussive))) / total_rms
+    centroid = float(np.median(librosa.feature.spectral_centroid(y=y, sr=sr)))
+    zcr = float(np.median(librosa.feature.zero_crossing_rate(y)))
+
+    midi = pretty_midi.PrettyMIDI(str(midi_path))
+    notes = [note for instrument in midi.instruments for note in instrument.notes if not instrument.is_drum]
+    durations = [float(note.end - note.start) for note in notes]
+    median_duration = float(np.median(durations)) if durations else 0.0
+    note_density = len(notes) / max(float(midi.get_end_time()), 1.0)
+
+    if percussive_ratio > 0.72 and median_duration < 0.34:
+        return "Plucked strings / piano", 24, 0.64
+    if harmonic_ratio > 0.78 and median_duration > 0.7:
+        if centroid < 1450:
+            return "Bowed strings / low woodwind", 42, 0.62
+        return "Bowed strings / wind", 40, 0.63
+    if centroid < 1050 and median_duration > 0.42:
+        return "Bass instrument", 33, 0.61
+    if centroid > 2850 and zcr > 0.085:
+        return "Bright plucked string", 25, 0.58
+    if note_density > 3.8 and median_duration < 0.5:
+        return "Piano / keyboard", 0, 0.60
+    return "Melodic instrument", 0, 0.52
+
+
+def _single_layer_result(audio_path: Path, midi_path: Path, musicxml_path: Path, note_count: int) -> LayerResult:
+    label, program, confidence = _estimate_single_instrument_profile(audio_path, midi_path)
+    midi = pretty_midi.PrettyMIDI(str(midi_path))
+    for instrument in midi.instruments:
+        if not instrument.is_drum:
+            instrument.program = program
+            instrument.name = label
+    midi.write(str(midi_path))
+    _write_musicxml_from_midi(midi_path, musicxml_path)
+    return LayerResult(
+        name=f"Layer 1: {label}",
+        audio_path=audio_path,
+        energy_ratio=1.0,
+        midi_path=midi_path,
+        musicxml_path=musicxml_path,
+        note_count=note_count,
+        estimated_instrument=label,
+        confidence=confidence,
+    )
+
+
 def _write_musicxml_from_midi(midi_path: Path, xml_path: Path) -> None:
     score = converter.parse(str(midi_path))
     score.write("musicxml", fp=str(xml_path))
@@ -728,7 +790,11 @@ def analyze_audio(
         full_midi_path = raw_midi_path
         full_musicxml_path = raw_musicxml_path
         full_note_count = raw_note_count
-        layers = []
+        layers = (
+            [_single_layer_result(audio_path, full_midi_path, full_musicxml_path, full_note_count)]
+            if transcribe_detected_layers and full_note_count > 0
+            else []
+        )
 
     return AnalysisResult(
         source_audio_path=audio_path,

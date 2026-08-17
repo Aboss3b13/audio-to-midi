@@ -203,7 +203,19 @@ def _score_viewer(xml_path: Path, widget_id: str) -> tuple[list[str], int]:
             raise RuntimeError("The score renderer could not read this MusicXML file.")
         pages = [toolkit.renderToSVG(i) for i in range(1, page_count + 1)]
         page = st.select_slider("Score page", options=list(range(1, page_count + 1)), value=1, key=f"page::{widget_id}")
-        st.markdown(f'<div style="max-height:760px;overflow:auto;background:white;border:1px solid #e5e7e2;border-radius:16px;padding:12px">{pages[page - 1]}</div>', unsafe_allow_html=True)
+        svg = pages[page - 1]
+        components.html(
+            f"""<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+              *{{box-sizing:border-box}} html,body{{margin:0;background:#f1f0ea}}
+              .page{{width:100%;min-height:100%;padding:18px;background:#f1f0ea}}
+              .paper{{max-width:1080px;margin:0 auto;background:#fff;border:1px solid #deddd6;
+                border-radius:12px;padding:18px;box-shadow:0 12px 36px rgba(24,35,31,.09)}}
+              svg{{display:block;width:100%!important;height:auto!important;max-width:100%}}
+            </style></head><body><main class="page"><div class="paper">{svg}</div></main></body></html>""",
+            height=820,
+            scrolling=True,
+        )
         st.caption(f"Page {page} of {page_count} · Download SVG for a print-ready vector page.")
         return pages, page
     except Exception as exc:
@@ -250,9 +262,13 @@ with st.sidebar:
     st.divider()
     if mode == "Advanced":
         st.caption("TRANSCRIPTION")
-        detection_method = st.selectbox("Layer engine", ["Stem-guided replica", "Note clustering", "Single score"])
+        detection_method = st.selectbox(
+            "Instrument layout",
+            ["Single instrument", "Automatic separation", "Force note groups"],
+            help="Use Single instrument for solo recordings. Separation is intended for true multi-instrument mixes.",
+        )
         export_layers = st.toggle("Create individual layer files", value=True)
-        target_layer_count = st.slider("Target layers", 1, 8, 3)
+        target_layer_count = st.slider("Target layers", 2, 8, 2)
         min_layer_note_ratio = st.slider("Minimum layer share", 0.02, 0.25, 0.06, 0.01)
         with st.expander("Model sensitivity"):
             onset_threshold = st.slider("Onset threshold", 0.35, 0.85, 0.50, 0.01)
@@ -264,7 +280,7 @@ with st.sidebar:
             flicker_merge_gap_ms = st.slider("Pitch flicker gap (ms)", 10, 120, 35, 5)
             sustain_boost = st.slider("Sustain fusion", 0.02, 0.20, 0.08, 0.01)
     else:
-        detection_method, export_layers, target_layer_count, min_layer_note_ratio = "Note clustering", True, 3, 0.04
+        detection_method, export_layers, target_layer_count, min_layer_note_ratio = "Single instrument", True, 1, 0.06
         onset_threshold, frame_threshold = 0.50, 0.30
         minimum_note_length_ms, min_output_note_length_ms = 125, 80
         merge_gap_ms, legato_extension_ms, flicker_merge_gap_ms, sustain_boost = 85, 45, 35, 0.08
@@ -325,8 +341,8 @@ if transcribe and source_bytes is not None:
     extension = Path(source_name).suffix.lower() or ".wav"
     source_path = run_dir / f"source{extension}"
     source_path.write_bytes(source_bytes)
-    detect_layers = detection_method != "Single score"
-    replica_mode = detection_method == "Stem-guided replica"
+    detect_layers = detection_method != "Single instrument"
+    replica_mode = detection_method == "Automatic separation"
     try:
         with st.status("Listening closely…", expanded=True) as status:
             st.write("Reading the recording and finding note events")
@@ -335,7 +351,7 @@ if transcribe and source_bytes is not None:
                 audio_path=source_path, output_root=run_dir, detect_layers=detect_layers,
                 transcribe_detected_layers=bool(export_layers), replica_mode=replica_mode,
                 min_layer_energy_ratio=float(min_layer_note_ratio),
-                target_layer_count=(None if mode == "Simple" else int(target_layer_count)) if detect_layers else None,
+                target_layer_count=(int(target_layer_count) if detection_method == "Force note groups" else None) if detect_layers else None,
                 onset_threshold=float(onset_threshold), frame_threshold=float(frame_threshold),
                 minimum_note_length_ms=float(minimum_note_length_ms), min_output_note_length_ms=float(min_output_note_length_ms),
                 merge_gap_ms=float(merge_gap_ms), legato_extension_ms=float(legato_extension_ms),
